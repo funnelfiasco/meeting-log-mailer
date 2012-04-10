@@ -1,0 +1,94 @@
+#!/usr/bin/env perl
+
+###################
+#
+# meeting-log-mailer
+#
+#	Ben Cotton
+#	<bcotton@fedoraproject.org>
+#
+#	A script to automatically send the minutes from a MeetBot-recorded meeting.
+#
+#		Arguments: newini OR [ini file] <URL> <group>
+#		Input: $HOME/.meeting-log-mailer.ini
+#		Output: $HOME/.meeting-log-mailer.ini (when called with newini)
+#				email
+#
+###################
+
+use strict;
+
+# I don't expect version number to change very often, but we might as well
+# keep track of it, just in case.
+my $VERSION = '0.0.nonfunctional';
+
+# The default path for the ini file. This can be overridden by specifying a 
+# filename as the first argument.
+my $iniFile = $ENV{'HOME'} . '/.meeting-log-mailer.ini';
+
+# The command used to send mail. We expect something roughly sendmail-like, but
+# anything you want to use is fine by me. By default, I just ask for sendmail.
+# If you don't want to change the setting here, you can specify 'sendmail' in 
+# the [global] section of the ini file.
+chomp(my $sendmail = `which sendmail`);
+
+# Arguments given to the mail program. Again, something approximating sendmail
+# options are expected. This setting can be overwritten by specifying 
+# 'sendmailopts' in the [global] section on the ini file.
+my $sendmailopts = '';
+
+# Here's where we start doing things.
+
+# Check to see if we're being run as root and die if we are. Nothing good can
+# ever come of running this script as root.
+if ( $< == 0 ) { 
+	print STDOUT "Nothing good can ever come of running this as root\n\n"; 
+	exit 1;
+}
+
+# Check to see if we were called with 'newini'. If we were, ignore subsequent
+# arguments. This, of course, means that naming an ini file 'newini' is an
+# incredibly ungood thing to do.
+if ( $ARGV[0] eq 'newini' ) { 
+	print "Called with newini, preparing to create a new ini file\n";
+	&newini;
+}
+
+# Were we called with three arguments? If so, the first one is a non-default 
+# ini file to use. Set that first.
+if ( $#ARGV == 2 ) { 
+	$iniFile = $ARGV[0]; 
+	shift @ARGV;
+}
+
+# If the ini file doesn't exist or can't be read, it will be difficult to get
+# the configuration values from it.
+if ( ! -r $iniFile ) {
+	print STDOUT "Could not find the specified configuration file:\n\t";
+	print STDOUT "$iniFile\nTry generating one with:\n\t $0 newini\n";
+	print STDOUT "or specify a file that exists\n\n";
+	exit 1;
+}
+
+# Do we have two arguments? The first should be the URL of the MeetBot minutes,
+# and the second should be the group as specified in the ini file.
+if ( $#ARGV != 1 ) {
+	print STDOUT "Invalid number of arguments. I need exactly two:\n";
+	print STDOUT "1. The URL of the MeetBot minutes\n2. The group\n";
+	exit 1;
+}
+
+# Here comes the hard part.
+
+
+#########
+#
+# newini subroutine
+#
+#        Create a new ini file or blow away the old one
+#
+#########
+
+sub newini {
+	exit 0;
+}
