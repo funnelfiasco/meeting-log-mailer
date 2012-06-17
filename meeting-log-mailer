@@ -9,14 +9,18 @@
 #
 #	A script to automatically send the minutes from a MeetBot-recorded meeting.
 #
-#		Arguments: newini OR [ini file] <URL> <group>
-#		Input: $HOME/.meeting-log-mailer.ini
-#		Output: $HOME/.meeting-log-mailer.ini (when called with newini)
+#		Requirements:	Config::IniFiles (CPAN module)
+#						Term::Prompt (CPAN module)
+#		Args:	newini [ini file]  OR [ini file] <URL> <group>
+#		Input:	$HOME/.meeting-log-mailer.ini
+#		Output:	$HOME/.meeting-log-mailer.ini (when called with newini)
 #				email
 #
 ###################
 
 use strict;
+use Config::IniFiles;
+use Term::Prompt;
 
 # I don't expect version number to change very often, but we might as well
 # keep track of it, just in case.
@@ -46,10 +50,12 @@ if ( $< == 0 ) {
 	exit 1;
 }
 
-# Check to see if we were called with 'newini'. If we were, ignore subsequent
+# Check to see if we were called with 'newini'. If we were check to see if a
+# filename was given to use instead of the default and then ignore subsequent
 # arguments. This, of course, means that naming an ini file 'newini' is an
 # incredibly ungood thing to do.
 if ( $ARGV[0] eq 'newini' ) { 
+    if ( $#ARGV == 1 ) { $iniFile = $ARGV[1]; }
 	print "Called with newini, preparing to create a new ini file\n";
 	&newini;
 }
@@ -78,8 +84,10 @@ if ( $#ARGV != 1 ) {
 	exit 1;
 }
 
-# Here comes the hard part.
+# Here comes the hard part. Let's read the INI file and load whatever
+# configuration we need to use.
 
+	# 
 
 #########
 #
@@ -90,5 +98,42 @@ if ( $#ARGV != 1 ) {
 #########
 
 sub newini {
+
+	# Open the ini file. If we can't write to it, that's a problem.
+	open (INIFILE, ">$iniFile") or die "Could not open $iniFile for writing\n";
+	
+	# Ask a few questions
+	# Sender's email address?
+	my $senderEmail = prompt('x', 'Your email address', '', '');
+	# Senders name
+	my $senderName = prompt('X', 'Your name', '', '');
+	# cc aaddress
+	my $ccEmail = prompt('X', 'Address(es) to cc', '', '');
+	# Path to sendmail
+	my $sendmail = prompt('X', 'Path to sendmail binary', '', "$sendmail");
+	# Sendmail options
+	my $sendmailopts = prompt('X', 'Sendmail options', '', "$sendmailopts");
+
+	# Have the user define a group
+	print "We will now define your first group. Multiple groups can be configured by\n";
+	print "editing your ini file.\n";
+	# The name of the group to use as the section ID
+	my $groupName = prompt('a', 'Group name', 'Alpha only', '');
+	# The groups email list
+	my $groupEmail = prompt('x', 'Group email address', '', '');
+	
+	# Okay, let's get down to writing the file we've been keeping open.
+	select(INIFILE);
+	print "[global]\n";
+	print "senderEmail = $senderEmail\n";
+	if ( $senderName ) { print "senderName = $senderName\n"; }
+	if ( $ccEmail ) { print "ccemail = $ccEmail\n"; }
+	if ( $sendmail ) { print "sendmail = $sendmail\n"; }
+	if ( $sendmailopts ) { print "sendmailopts = $sendmailopts\n"; }
+    print "[$groupName]\ngroupemail = $groupEmail\n";
+
+	close (INIFILE);
+	select(STDOUT);
+
 	exit 0;
 }
