@@ -10,6 +10,7 @@
 #	A script to automatically send the minutes from a MeetBot-recorded meeting.
 #
 #		Requirements:	Config::IniFiles (CPAN module)
+#						LWP::Simple (CPAN module)
 #						Term::Prompt (CPAN module)
 #		Args:	newini [ini file]  OR [ini file] <URL> <group>
 #		Input:	$HOME/.meeting-log-mailer.ini
@@ -20,6 +21,7 @@
 
 use strict;
 use Config::IniFiles;
+use LWP::Simple;
 use Term::Prompt;
 
 # I don't expect version number to change very often, but we might as well
@@ -63,8 +65,7 @@ if ( $ARGV[0] eq 'newini' ) {
 # Were we called with three arguments? If so, the first one is a non-default 
 # ini file to use. Set that first.
 if ( $#ARGV == 2 ) { 
-	$iniFile = $ARGV[0]; 
-	shift @ARGV;
+	$iniFile = shift @ARGV;
 }
 
 # If the ini file doesn't exist or can't be read, it will be difficult to get
@@ -80,14 +81,27 @@ if ( ! -r $iniFile ) {
 # and the second should be the group as specified in the ini file.
 if ( $#ARGV != 1 ) {
 	print STDOUT "Invalid number of arguments. I need exactly two:\n";
-	print STDOUT "1. The URL of the MeetBot minutes\n2. The group\n";
+	print STDOUT "1. The URL of the MeetBot minutes (.txt)\n2. The group\n";
 	exit 1;
 }
+
+# Now we set the URL and the group
+my $url = shift @ARGV;
+my $group = shift @ARGV;
 
 # Here comes the hard part. Let's read the INI file and load whatever
 # configuration we need to use.
 
-	# 
+my $config = new Config::IniFiles( -file => "$iniFile", -default=>"global" ); 
+
+# Grab the specified log file or die
+unless ( is_success(
+	getstore("$url", "/tmp/m-l-m_minutes_$$") ) ) {
+
+	die "Could not download $url to /tmp/m-l-m_minutes_$$";
+}
+
+# Start 
 
 #########
 #
